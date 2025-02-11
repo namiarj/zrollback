@@ -97,7 +97,7 @@ main ()
 	while true
 	do
 	  list_snaps
-  done
+  	done
 }
 
 main $@
