@@ -28,7 +28,7 @@ gen_tmp ()
 list_snaps ()
 {
 	snaps=`zfs list -t snapshot -o name -H`
-	cmd="$d --ok-label Props --extra-button --extra-label Rollback --help-button --help-label Destroy --no-tags --menu ZFS Snapshots 20 46 40"
+	cmd="$d --ok-label Props --extra-button --extra-label Rollback --help-button --help-label Destroy --no-tags --menu Snapshots 20 46 40"
 	for snap in $snaps
 	do
 		cmd="$cmd $snap `echo $snap`"
