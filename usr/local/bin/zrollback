@@ -44,6 +44,7 @@ list_snaps ()
 	1)
 		# Cancel
 		exit 0
+		;;
 	2)
 		# Destroy
 		snap=`more $tmpfile | tail -c +5`
