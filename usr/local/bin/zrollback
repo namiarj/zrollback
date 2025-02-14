@@ -41,6 +41,9 @@ list_snaps ()
 		snap=`more $tmpfile`
 		zfs_props
 		;;
+	1)
+		# Cancel
+		exit 0
 	2)
 		# Destroy
 		snap=`more $tmpfile | tail -c +5`
@@ -51,8 +54,6 @@ list_snaps ()
 		snap=`more $tmpfile`
 		zfs_rollback
 		;;
-	*)
-		exit 0
 	esac
 	cleanup
 }
