@@ -3,8 +3,12 @@
 #
 # Global
 #
-d="bsddialog"
 progname=${0##*/}
+if bsddialog --version; then
+	d="bsddialog"
+else
+	d="dialog"
+fi
 
 #
 # Functions
