@@ -3,7 +3,6 @@
 #
 # Global
 #
-progname=${0##*/}
 if bsddialog --version; then
 	d="bsddialog"
 else
@@ -13,26 +12,26 @@ fi
 #
 # Functions
 #
-cleanup ()
+clean ()
 {
 	rm $tmpfile 2>/dev/null
 }
 
 gen_tmp ()
 {
-	tmpfile="/tmp/$progname"."`awk 'BEGIN {srand();printf "%d\n", rand() * 10^10}'`"
+	tmpfile="/tmp/zrollback"."`awk 'BEGIN {srand();printf "%d\n", rand() * 10^10}'`"
 }
 
 list_snaps ()
 {
 	snaps=`zfs list -H -t snapshot -o name`
-	cmd="$d --ok-label Props --extra-button --extra-label Rollback --help-button --help-label Destroy --no-tags --menu Snapshots 20 46 40"
+	menu="$d --ok-label Props --extra-button --extra-label Rollback --help-button --help-label Destroy --no-tags --menu Snapshots 20 46 40"
 	for snap in $snaps
 	do
-		cmd="$cmd $snap `echo $snap`"
+		menu="$menu $snap `echo $snap`"
 	done
 	gen_tmp
-	$cmd 2> $tmpfile
+	$menu 2> $tmpfile
 	case $? in
 	0)
 		# Props 
@@ -52,20 +51,18 @@ list_snaps ()
 	*)
 		exit
 	esac
-	cleanup
+	clean
 }
 
 zfs_destroy ()
 {
-	$d --default-button No --yesno "Destroy $snap?" 7 50 
-	case $? in
-	0)
+	$d --default-button No --yesno "Destroy $snap?" 7 50
+	if [ $? -eq 0 ]; then
 		zfs destroy $snap
 		if [ $? -ne 0 ]; then
 			exit 1 
 		fi
-		;;
-	esac
+	fi
 }
 
 zfs_props ()
@@ -77,26 +74,19 @@ zfs_props ()
 zfs_rollback ()
 {
 	$d --default-button No --yesno "Rollback $snap?" 7 50
-	case $? in
-	0)
+	if [ $? -eq 0 ]; then
 		zfs rollback $snap
 		if [ $? -ne 0 ]; then
 			exit 1 
 		fi
-		;;
-	esac
+	fi
 }
 
 #
 # Main
 #
-main ()
-{
-	trap "cleanup; exit" INT TERM HUP EXIT
-	while true
-	do
-		list_snaps
-  	done
-}
-
-main $@
+trap "clean; exit" INT TERM HUP EXIT
+while true
+do
+	list_snaps
+done
