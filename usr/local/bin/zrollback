@@ -4,7 +4,6 @@
 # Global
 #
 name=zrollback
-theme=/usr/local/share/zrollback.theme
 tmp="/tmp/$name"
 
 #
@@ -25,9 +24,6 @@ setup ()
 {
   if bsddialog --version > /dev/null; then
     d=bsddialog
-    if [ -e $theme ]; then
-      d="$d --load-theme $theme"
-    fi
   else
     d=dialog
   fi
