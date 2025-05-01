@@ -23,7 +23,7 @@ error ()
 
 setup ()
 {
-  if bsddialog --version; then
+  if bsddialog --version > /dev/null; then
     d=bsddialog
     if [ -e $theme ]; then
       d="$d --load-theme $theme"
