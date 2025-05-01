@@ -5,103 +5,103 @@
 #
 name=zrollback
 theme=/usr/local/share/zrollback.theme
+tmp="/tmp/$name"
 
 #
 # Functions
 #
 clean ()
 {
-	rm $tmp 2> /dev/null
+  rm $tmp 2> /dev/null
 }
 
 error ()
 {
-	echo "$name: $*" >&2
-	exit 1
+  echo "$name: $*" >&2
+  exit 1
 }
 
 setup ()
 {
-	if bsddialog --version; then
-		d=bsddialog
-		if [ -e $theme ]; then
-			d="$d --load-theme $theme"
-		fi
-	else
-		d=dialog
-	fi
+  if bsddialog --version; then
+    d=bsddialog
+    if [ -e $theme ]; then
+      d="$d --load-theme $theme"
+    fi
+  else
+    d=dialog
+  fi
 }
 
-tmpgen ()
+tmpcheck ()
 {
-	tmp="/tmp/$name`awk 'BEGIN {srand();printf "%d\n", rand() * 6^9}'`"
-	if [ -e $tmp ]; then
-		error "$tmp exists"
-	fi
+  if [ -e $tmp ]; then
+    error "$tmp exists"
+  fi
 }
 
 zdestroy ()
 {
-	$d --default-button No --yesno "Destroy $snap?" 0 0
-	if [ $? -eq 0 ]; then
-		zfs destroy $snap
-		if [ $? -ne 0 ]; then
-			error "zfs destroy failed"
-		fi
-	fi
+  $d --yesno --default-button No "Destroy $snap?" 0 0
+  if [ $? -eq 0 ]; then
+    zfs destroy $snap
+    if [ $? -ne 0 ]; then
+      error "zfs destroy failed"
+    fi
+  fi
 }
 
 zlist ()
 {
-	snaps=`zfs list -H -t snapshot -o name`
-	if [ $? -ne 0 ]; then
-		error "zfs list failed" 
-	fi
-	menu="$d --ok-label Property --extra-button --extra-label Rollback --help-button --help-label Destroy --no-tags --menu Snapshots 0 0 0"
-	for snap in $snaps
-	do
-		menu="$menu $snap $snap"
-	done
-	tmpgen
-	$menu 2> $tmp
-	case $? in
-	0)
-		snap=`more $tmp`
-		zprop
-		;;
-	2)
-		snap=`more $tmp | tail -c +5`
-		zdestroy
-		;;
-	3)
-		snap=`more $tmp`
-		zrollback
-		;;
-	*)
-		exit
-	esac
-	clean
+  snaps=`zfs list -H -t snapshot -o name`
+  if [ $? -ne 0 ]; then
+    error "zfs list failed" 
+  fi
+  menu="$d --ok-label Property --extra-button --extra-label Rollback --help-button --help-label Destroy --no-tags --menu Snapshots 0 0 0"
+  for snap in $snaps
+  do
+    menu="$menu $snap $snap"
+  done
+  tmpcheck
+  $menu 2> $tmp
+  case $? in
+  0)
+    snap=`more $tmp`
+    zprop
+    ;;
+  2)
+    snap=`more $tmp | tail -c +5`
+    zdestroy
+    ;;
+  3)
+    snap=`more $tmp`
+    zrollback
+    ;;
+  *)
+    exit
+  esac
+  clean
 }
 
 zprop ()
 {
-	prop=`zfs get -H -o property,value all $snap` 
-	if [ $? -ne 0 ]; then
-		error "zfs get failed" 
-	fi
-	text=`printf "$snap\n$prop"`
-	$d --msgbox "$text" 0 0
+  prop=`zfs get -H -o property,value all $snap` 
+  if [ $? -ne 0 ]; then
+    error "zfs get failed" 
+  fi
+  text=`printf "$snap\n$prop"`
+  $d --msgbox "$text" 0 0
 }
 
 zrollback ()
 {
-	$d --default-button No --yesno "Rollback $snap?" 0 0
-	if [ $? -eq 0 ]; then
-		zfs rollback $snap
-		if [ $? -ne 0 ]; then
-			error "zfs rollback failed" 
-		fi
-	fi
+  $d --yesno --default-button No "Rollback $snap?" 0 0
+  if [ $? -eq 0 ]; then
+    zfs rollback $snap
+    if [ $? -ne 0 ]; then
+      error "zfs rollback failed" 
+    fi
+  fi
 }
 
 #
@@ -111,5 +111,5 @@ setup
 trap "clean; exit" INT TERM HUP EXIT
 while true
 do
-	zlist
+  zlist
 done
