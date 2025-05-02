@@ -9,6 +9,15 @@ tmp="/tmp/$name"
 #
 # Functions
 #
+checktmp ()
+{
+  if [ -e $tmp ]; then
+    error "$tmp exists"
+  fi
+  touch $tmp
+  guard "$tmp needs write permission"
+}
+
 clean ()
 {
   rm $tmp 2> /dev/null
@@ -27,19 +36,18 @@ guard ()
   fi
 }
 
+readtmp ()
+{
+    snap=`more $tmp`
+    clean
+}
+
 setup ()
 {
   if bsddialog --version > /dev/null; then
     d=bsddialog
   else
     d=dialog
-  fi
-}
-
-tmpcheck ()
-{
-  if [ -e $tmp ]; then
-    error "$tmp exists"
   fi
 }
 
@@ -61,25 +69,25 @@ zlist ()
   do
     menu="$menu $snap $snap"
   done
-  tmpcheck
+  checktmp
   $menu 2> $tmp
   case $? in
   0)
-    snap=`more $tmp`
+    readtmp
     zprop
     ;;
   2)
-    snap=`more $tmp | tail -c +5`
+    readtmp
+    snap=`echo $snap | tail -c +5`
     zdestroy
     ;;
   3)
-    snap=`more $tmp`
+    readtmp
     zrollback
     ;;
   *)
     exit
   esac
-  clean
 }
 
 zprop ()
