@@ -9,11 +9,9 @@ tmp="/tmp/$name"
 #
 # Functions
 #
+
 checktmp ()
 {
-  if [ -e $tmp ]; then
-    error "$tmp exists"
-  fi
   touch $tmp
   guard "$tmp needs write permission"
 }
@@ -36,10 +34,20 @@ guard ()
   fi
 }
 
+loop ()
+{
+  while true
+  do
+    $*
+  done
+}
+
 readtmp ()
 {
-    snap=`more $tmp`
-    clean
+    if [ -e $tmp ]; then
+      snap=`more $tmp`
+      clean
+    fi
 }
 
 setup ()
@@ -62,27 +70,26 @@ zdestroy ()
 
 zlist ()
 {
-  snaps=`zfs list -H -t snapshot -o name`
+  list=`zfs list -H -t snapshot -o name`
   guard "zfs list failed"
   menu="$d --ok-label Property --extra-button --extra-label Rollback --help-button --help-label Destroy --no-tags --menu Snapshots 0 0 0"
-  for snap in $snaps
+  for s in $list
   do
-    menu="$menu $snap $snap"
+    menu="$menu $s $s"
   done
   checktmp
   $menu 2> $tmp
-  case $? in
+  button=$?
+  readtmp
+  case $button in
   0)
-    readtmp
     zprop
     ;;
   2)
-    readtmp
     snap=`echo $snap | tail -c +5`
     zdestroy
     ;;
   3)
-    readtmp
     zrollback
     ;;
   *)
@@ -112,7 +119,4 @@ zrollback ()
 #
 setup
 trap "clean; exit" INT TERM HUP EXIT
-while true
-do
-  zlist
-done
+loop zlist
