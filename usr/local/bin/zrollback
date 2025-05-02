@@ -20,6 +20,13 @@ error ()
   exit 1
 }
 
+guard ()
+{
+  if [ $? -ne 0 ]; then
+    error "$*" 
+  fi
+}
+
 setup ()
 {
   if bsddialog --version > /dev/null; then
@@ -41,18 +48,14 @@ zdestroy ()
   $d --yesno --default-button No "Destroy $snap?" 0 0
   if [ $? -eq 0 ]; then
     zfs destroy $snap
-    if [ $? -ne 0 ]; then
-      error "zfs destroy failed"
-    fi
+    guard "zfs destroy failed"
   fi
 }
 
 zlist ()
 {
   snaps=`zfs list -H -t snapshot -o name`
-  if [ $? -ne 0 ]; then
-    error "zfs list failed" 
-  fi
+  guard "zfs list failed"
   menu="$d --ok-label Property --extra-button --extra-label Rollback --help-button --help-label Destroy --no-tags --menu Snapshots 0 0 0"
   for snap in $snaps
   do
@@ -82,9 +85,7 @@ zlist ()
 zprop ()
 {
   prop=`zfs get -H -o property,value all $snap` 
-  if [ $? -ne 0 ]; then
-    error "zfs get failed" 
-  fi
+  guard "zfs get failed"
   text=`printf "$snap\n$prop"`
   $d --msgbox "$text" 0 0
 }
@@ -94,9 +95,7 @@ zrollback ()
   $d --yesno --default-button No "Rollback $snap?" 0 0
   if [ $? -eq 0 ]; then
     zfs rollback $snap
-    if [ $? -ne 0 ]; then
-      error "zfs rollback failed" 
-    fi
+    guard "zfs rollback failed" 
   fi
 }
 
