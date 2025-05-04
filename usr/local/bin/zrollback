@@ -9,7 +9,6 @@ tmp="/tmp/$name"
 #
 # Functions
 #
-
 checktmp ()
 {
   touch $tmp
@@ -44,14 +43,12 @@ loop ()
 
 readtmp ()
 {
-    if [ -e $tmp ]; then
-      snap=`more $tmp`
-      clean
-    fi
+  snap=`cat $tmp`
 }
 
 setup ()
 {
+  checktmp
   if bsddialog --version > /dev/null; then
     d=bsddialog
   else
@@ -70,14 +67,13 @@ zdestroy ()
 
 zlist ()
 {
-  list=`zfs list -H -t snapshot -o name`
+  list=`zfs list -Ht snapshot -o name`
   guard "zfs list failed"
   menu="$d --ok-label Property --extra-button --extra-label Rollback --help-button --help-label Destroy --no-tags --menu Snapshots 0 0 0"
   for s in $list
   do
     menu="$menu $s $s"
   done
-  checktmp
   $menu 2> $tmp
   button=$?
   readtmp
@@ -99,7 +95,7 @@ zlist ()
 
 zprop ()
 {
-  prop=`zfs get -H -o property,value all $snap` 
+  prop=`zfs get -Ho property,value all $snap` 
   guard "zfs get failed"
   text=`printf "$snap\n$prop"`
   $d --msgbox "$text" 0 0
