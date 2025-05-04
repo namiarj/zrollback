@@ -54,6 +54,7 @@ setup ()
   else
     d=dialog
   fi
+  trap "clean; exit" INT TERM HUP EXIT
 }
 
 zdestroy ()
@@ -114,5 +115,4 @@ zrollback ()
 # Main
 #
 setup
-trap "clean; exit" INT TERM HUP EXIT
 loop zlist
