@@ -1,0 +1,122 @@
+#!/bin/sh
+
+#
+# Global
+#
+name=zrollback
+tmp="/tmp/$name"
+
+#
+# Functions
+#
+checktmp ()
+{
+	touch $tmp
+	guard "$tmp needs write permission"
+}
+
+clean ()
+{
+	rm $tmp 2> /dev/null
+}
+
+error ()
+{
+	echo "$name: $*" >&2
+	exit 1
+}
+
+guard ()
+{
+	if [ $? -ne 0 ]; then
+		error "$*" 
+	fi
+}
+
+loop ()
+{
+	while true
+	do
+		$*
+	done
+}
+
+readtmp ()
+{
+	snap=`cat $tmp`
+}
+
+setup ()
+{
+	trap "clean; exit" INT TERM HUP EXIT
+	checktmp
+	if bsddialog --version > /dev/null; then
+		d=bsddialog
+	else
+		d=dialog
+	fi
+}
+
+zdestroy ()
+{
+	$d --yesno --default-button No "Destroy $snap?" 0 0
+	if [ $? -eq 0 ]; then
+		zfs destroy $snap
+		guard "zfs destroy failed"
+	fi
+}
+
+zlist ()
+{
+	list=`zfs list -Ht snapshot -o name`
+	guard "zfs list failed"
+	if [ -z "$list" ]; then
+		echo "$name: no snapshot available"
+		exit
+	fi
+	menu="$d --ok-label Property --extra-button --extra-label Rollback --help-button --help-label Destroy --no-tags --menu Snapshots 0 0 0"
+	for s in $list
+	do
+		menu="$menu $s $s"
+	done
+	$menu 2> $tmp
+	button=$?
+	readtmp
+	case $button in
+	0)
+		zprop
+		;;
+	2)
+		snap=`echo $snap | tail -c +5`
+		zdestroy
+		;;
+	3)
+		zrollback
+		;;
+	*)
+		exit
+	esac
+}
+
+zprop ()
+{
+	prop=`zfs get -Ho property,value all $snap` 
+	guard "zfs get failed"
+	text=`printf "$snap\n$prop"`
+	$d --msgbox "$text" 0 0
+}
+
+zrollback ()
+{
+	$d --yesno --default-button No "Rollback $snap?" 0 0
+	if [ $? -eq 0 ]; then
+		zfs rollback $snap
+		guard "zfs rollback failed" 
+	fi
+}
+
+#
+# Main
+#
+setup
+loop zlist
